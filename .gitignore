@@ -57,3 +57,4 @@ buck-out/
 
 # Project artifacts
 src/*.js
+lib/*
