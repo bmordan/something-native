@@ -1,13 +1,20 @@
 open BsReactNative;
 
+type duration = {
+    duration: int,
+    current: int,
+    formatted: string,
+    percentage: int,
+}
+
 type state = {
-    duration: option(int),
-    timer: option(int)
+    timer: option(duration)
 };
 
 type action =
   | Start(int)
-  | Dec(int)
+  | Tick(duration)
+  | Cancel
   | Stop;
 
 module Styles = {
@@ -17,29 +24,71 @@ module Styles = {
     let text = style([color(String("#fff")), fontSize(Float(22.)), marginTop(Pt(30.))]);
 };
 
+let timerId = ref(Js.Global.setTimeout(() => (), 0))
+
+let to_percent = n => int_of_float(100. *. n);
+
+let format_timer = (time) => {
+    let minutes = time / 60;
+    let seconds = time mod 60;
+    let mins = minutes < 10 ? "0" ++ string_of_int(minutes) : string_of_int(minutes);
+    let secs = seconds < 10 ? "0" ++ string_of_int(seconds) : string_of_int(seconds);
+    mins ++ ":" ++ secs;
+}
+
 let component = ReasonReact.reducerComponent("Timer");
 
 let make = _children => {
   ...component,
   initialState: () => {
-    duration: None,
     timer: None
   },
   reducer: (action, state) => {
     switch(action) {
-    | Start(duration) => ReasonReact.Update({timer: Some(duration), duration: Some(duration)})
-    | Dec(timer) => ReasonReact.NoUpdate
-    | Stop => ReasonReact.Update({...state, timer: None})
+    | Start(time) => {
+        let duration = {
+          duration: time,
+          current: time,
+          formatted: format_timer(time),
+          percentage: 0
+        };
+
+        ReasonReact.UpdateWithSideEffects({timer: Some(duration)}, self => self.send(Tick(duration)));
+    }
+    | Tick({duration, current, formatted, percentage}) => {
+        let should_stop = current == 0;
+
+        let current_tick = current - 1;
+        
+        let nextDuration = {
+            duration,
+            current: current_tick,
+            formatted: format_timer(current_tick),
+            percentage: float_of_int(duration - current_tick) /. float_of_int(duration) |> to_percent
+        };
+
+        should_stop
+          ? ReasonReact.UpdateWithSideEffects({timer: Some({duration, current, formatted, percentage})}, self => self.send(Stop))
+          : ReasonReact.UpdateWithSideEffects({timer: Some(nextDuration)}, self => {
+            timerId := Js.Global.setTimeout(() => self.send(Tick(nextDuration)), 1000)
+          })
+    }
+    | Cancel => {
+        Js.Global.clearTimeout(timerId^)
+        ReasonReact.Update({timer: None})
+    }
+    | Stop => ReasonReact.Update({timer: None})
     };
   },
   render: ({state, send}) =>
     <View>
         (
             switch (state.timer) {
-            | Some(time) =>
+            | Some(duration) =>
                 <View style=Styles.button>
                     <Button title="Cancel" onPress=(_evt => send(Stop)) color="#DC143C" />
-                    <Text style=Styles.text>(ReasonReact.string(string_of_int(time)))</Text>
+                    <Text style=Styles.text>(ReasonReact.string(duration.formatted))</Text>
+                    <Text style=Styles.text>(ReasonReact.string(string_of_int(duration.percentage) ++ "%"))</Text>
                 </View>
             | None =>
               <View style=Styles.button>
