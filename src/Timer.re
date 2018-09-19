@@ -13,7 +13,7 @@ type state = {
 
 type action =
   | Start(int)
-  | Tick(duration)
+  | Tick
   | Cancel
   | Stop;
 
@@ -48,30 +48,33 @@ let make = _children => {
     | Start(time) => {
         let duration = {
           duration: time,
-          current: time,
+          current: time + 1,
           formatted: format_timer(time),
           percentage: 0
         };
 
-        ReasonReact.UpdateWithSideEffects({timer: Some(duration)}, self => self.send(Tick(duration)));
+        ReasonReact.UpdateWithSideEffects({timer: Some(duration)}, self => self.send(Tick));
     }
-    | Tick({duration, current, formatted, percentage}) => {
-        let should_stop = current == 0;
+    | Tick => {
+        switch (state.timer) {
+        | Some({duration, current}) => {
+            let current_tick = current - 1;
 
-        let current_tick = current - 1;
-        
-        let nextDuration = {
-            duration,
-            current: current_tick,
-            formatted: format_timer(current_tick),
-            percentage: float_of_int(duration - current_tick) /. float_of_int(duration) |> to_percent
-        };
+            let nextDuration = {
+                duration, 
+                current: current_tick,
+                formatted: format_timer(current_tick),
+                percentage: float_of_int(duration - current_tick) /. float_of_int(duration) |> to_percent
+            }
 
-        should_stop
-          ? ReasonReact.UpdateWithSideEffects({timer: Some({duration, current, formatted, percentage})}, self => self.send(Stop))
-          : ReasonReact.UpdateWithSideEffects({timer: Some(nextDuration)}, self => {
-            timerId := Js.Global.setTimeout(() => self.send(Tick(nextDuration)), 1000)
-          })
+            ReasonReact.UpdateWithSideEffects({timer: Some(nextDuration)}, self => {
+                current_tick === 0
+                ? self.send(Stop)
+                : timerId := Js.Global.setTimeout(() => self.send(Tick), 1000)
+            })
+        }
+        | None => ReasonReact.NoUpdate
+        }
     }
     | Cancel => {
         Js.Global.clearTimeout(timerId^)
