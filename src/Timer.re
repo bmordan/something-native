@@ -80,22 +80,33 @@ let make = _children => {
         Js.Global.clearTimeout(timerId^)
         ReasonReact.Update({timer: None})
     }
-    | Stop => ReasonReact.Update({timer: None})
+    | Stop => {
+        Alert.alert(
+            ~title="Completed",
+            ~message="You have meditated well",
+            ~buttons=[{ text: Some("OK"), onPress: None, style: Some(`default), }],
+            ~options={ cancelable: Some(true), onDismiss: None, },
+            ~type_=`default,
+            ()
+        )
+        Vibration.vibrate(~pattern=[|0, 500, 1000, 700|], ~repeat=false)
+        ReasonReact.Update({timer: None})
+    }
     };
   },
   render: ({state, send}) =>
     <View>
         (
             switch (state.timer) {
-            | Some(duration) =>
+            | Some({formatted, percentage}) =>
                 <View style=Styles.button>
-                    <Button title="Cancel" onPress=(_evt => send(Stop)) color="#DC143C" />
-                    <Text style=Styles.text>(ReasonReact.string(duration.formatted))</Text>
-                    <Text style=Styles.text>(ReasonReact.string(string_of_int(duration.percentage) ++ "%"))</Text>
+                    <Button title="Cancel" onPress=(_evt => send(Cancel)) color="#DC143C" />
+                    <Text style=Styles.text>(ReasonReact.string(formatted))</Text>
+                    <Text style=Styles.text>(ReasonReact.string(string_of_int(percentage) ++ "%"))</Text>
                 </View>
             | None =>
               <View style=Styles.button>
-                <Button title="Start" onPress=(_evt => send(Start(10))) color="#DC143C" />
+                <Button title="Start" onPress=(_evt => send(Start(1200))) color="#DC143C" />
               </View>
             }
         )
