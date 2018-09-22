@@ -13,8 +13,6 @@ module Styles = {
     ]);
 
   let text = style([color(String("#fff")), fontSize(Float(24.))]);
-
-  let button = style([marginTop(Pt(30.))]);
 };
 
 module Main = {
@@ -27,9 +25,7 @@ module Main = {
         <Text style=Styles.text>
           (ReasonReact.string("Something to meditate on"))
         </Text>
-        <View style=Styles.button>
-          <Button title="Start" onPress={() => {Js.log("start the timer")}} color="#CD5C5C"/>
-        </View>
+        <Timer />
       </View>,
   };
 };
