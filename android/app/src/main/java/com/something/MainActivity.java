@@ -1,6 +1,8 @@
 package com.something;
 
 import com.facebook.react.ReactActivity;
+import android.os.Bundle;
+import android.view.WindowManager;
 
 public class MainActivity extends ReactActivity {
 
@@ -11,5 +13,10 @@ public class MainActivity extends ReactActivity {
     @Override
     protected String getMainComponentName() {
         return "something";
+    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // setContentView(R.layout.activity_main);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 }
